@@ -1,6 +1,5 @@
 %module lmdb_php
 %include exception.i    
-%include cstring.i
 
 %{
 #include "lmdb.h"
@@ -70,10 +69,15 @@
 %rename (mdb_env_set_userctx) mdb_env_set_userctx_swig(MDB_env *env, char *value);
 #endif
 
-%cstring_output_withsize(char **output_str, size_t *output_len);
+%typemap(argout) (char **output_str, size_t *output_len) {
+    if (*$2) {
+      ZVAL_STRINGL($result, *$1, *$2, 1);
+    } else {
+      ZVAL_EMPTY_STRING($result);
+    }
+};
+
 %apply (char *STRING, size_t LENGTH) { (char *input_str, size_t input_len) };
-%newobject mdb_val_create;
-%delobject mdb_val_destroy;
 
 %inline %{
     MDB_envinfo *mdb_env_info_swig(MDB_env *env){
@@ -215,7 +219,7 @@
 
         int rc = mdb_env_create(&env);
 
-        if(rc != 0){	
+        if(rc != 0){
             php_error_docref(NULL, E_NOTICE, "mdb_txn_begin: %d\n", rc);
         }
 
@@ -266,21 +270,12 @@
     MDB_val *mdb_val_create(char *input_str, size_t input_len){
         MDB_val *key;
         key = (MDB_val*)malloc( sizeof( MDB_val ) );
-
-        //int length = strlen(value) + 1;
-        //char *res = malloc(length);
-        key->mv_data = malloc(input_len);
-        //strncpy(res, value, length);
-        memcpy(key->mv_data, value, input_len);
-
         key->mv_size = input_len;
-        //key->mv_data = res;
-
-        //return key;
-    }
-
-    void mdb_val_destroy(MDB_val *mdb_val) {
-        free(mdb_val->mv_data);
+        key->mv_data = NULL;
+        if (input_len) {
+          key->mv_data = malloc(input_len);
+          memcpy(key->mv_data, input_str, input_len);
+        }
     }
 
     int mdb_val_size( MDB_val *key){
@@ -288,7 +283,6 @@
     }
 
     void mdb_val_data(char **output_str, size_t *output_len, MDB_val *key){
-        //return (char*)key->mv_data;
         *output_str = (char*)key->mv_data;
         *output_len = key->mv_size;
     }
