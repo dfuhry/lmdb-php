@@ -273,6 +273,11 @@
         key->mv_size = input_len;
         key->mv_data = NULL;
         if (input_len) {
+          // TODO: Fix this memory leak. Not as simple as just doing:
+          // "free(key->mv_data);" in destructor since mdb operations can alter
+          // mv_size and mv_data pointer during get operations.
+          // Maybe store pointer in a data structure indexed on MDB_val memory
+          // location, to be looked-up & freed when "owning" MDB_val is freed.
           key->mv_data = malloc(input_len);
           memcpy(key->mv_data, input_str, input_len);
         }
