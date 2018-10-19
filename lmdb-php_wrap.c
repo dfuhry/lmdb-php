@@ -1004,13 +1004,11 @@ static void SWIG_Php_SetModule(swig_module_info *pointer) {
 #define SWIGTYPE_p_f_p_struct_MDB_val_p_void_p_void_p_void__void swig_types[12]
 #define SWIGTYPE_p_int swig_types[13]
 #define SWIGTYPE_p_mode_t swig_types[14]
-#define SWIGTYPE_p_p_char swig_types[15]
-#define SWIGTYPE_p_p_void swig_types[16]
-#define SWIGTYPE_p_size_t swig_types[17]
-#define SWIGTYPE_p_unsigned_int swig_types[18]
-#define SWIGTYPE_p_void swig_types[19]
-static swig_type_info *swig_types[21];
-static swig_module_info swig_module = {swig_types, 20, 0, 0, 0, 0};
+#define SWIGTYPE_p_p_void swig_types[15]
+#define SWIGTYPE_p_unsigned_int swig_types[16]
+#define SWIGTYPE_p_void swig_types[17]
+static swig_type_info *swig_types[19];
+static swig_module_info swig_module = {swig_types, 18, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -1198,7 +1196,7 @@ extern "C" {
         return flags;
     }
 
-    char *mdb_env_get_path_swig(MDB_env *env){
+    const char *mdb_env_get_path_swig(MDB_env *env){
         const char *path;
 
         int rc = mdb_env_get_path(env, &path);
@@ -1207,7 +1205,7 @@ extern "C" {
             php_error_docref(NULL, E_NOTICE, "mdb_env_get_path: %d\n", rc);
         }
 
-        return (unsigned char *)path;
+        return path;
     }
 
     mdb_filehandle_t *mdb_env_get_fd_swig (MDB_env *env){
@@ -1296,18 +1294,29 @@ extern "C" {
         key->mv_size = input_len;
         key->mv_data = NULL;
         if (input_len) {
+          // TODO: Fix this malloc() memory leak. Not as simple as just doing
+          // free(key->mv_data) in a destructor since mdb operations can alter
+          // mv_size and mv_data pointer during get operations, after which
+          // mv_data should not be free()d.
+          // Maybe store pointer in a data structure indexed on MDB_val memory
+          // location, to be looked-up & freed when "owning" MDB_val is freed.
           key->mv_data = malloc(input_len);
+
           memcpy(key->mv_data, input_str, input_len);
         }
+        return key;
     }
 
-    int mdb_val_size( MDB_val *key){
-        return (int)key->mv_size;
+    size_t mdb_val_size( MDB_val *key){
+        return key->mv_size;
     }
 
-    void mdb_val_data(char **output_str, size_t *output_len, MDB_val *key){
-        *output_str = (char*)key->mv_data;
-        *output_len = key->mv_size;
+    /*
+     * Placeholder that returns self; a previously-defined typemap will do the
+     * grander work of outputting key->mv_size and key->mv_data into a PHP string.
+     */
+    MDB_val *mdb_val_data(MDB_val *key) {
+        return key;
     }
 
     int mdb_stat_psize(MDB_stat *stat){
@@ -1391,9 +1400,7 @@ static swig_type_info _swigt__p_f_p_struct_MDB_env_p_q_const__char__void = {"_p_
 static swig_type_info _swigt__p_f_p_struct_MDB_val_p_void_p_void_p_void__void = {"_p_f_p_struct_MDB_val_p_void_p_void_p_void__void", "void (*)(struct MDB_val *,void *,void *,void *)|MDB_rel_func *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_int = {"_p_int", "int *|mdb_filehandle_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_mode_t = {"_p_mode_t", "mode_t *|mdb_mode_t *", 0, 0, (void*)0, 0};
-static swig_type_info _swigt__p_p_char = {"_p_p_char", "char **", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_p_void = {"_p_p_void", "void **", 0, 0, (void*)0, 0};
-static swig_type_info _swigt__p_size_t = {"_p_size_t", "size_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_unsigned_int = {"_p_unsigned_int", "unsigned int *|MDB_dbi *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_void = {"_p_void", "void *", 0, 0, (void*)0, 0};
 
@@ -1413,9 +1420,7 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_f_p_struct_MDB_val_p_void_p_void_p_void__void,
   &_swigt__p_int,
   &_swigt__p_mode_t,
-  &_swigt__p_p_char,
   &_swigt__p_p_void,
-  &_swigt__p_size_t,
   &_swigt__p_unsigned_int,
   &_swigt__p_void,
 };
@@ -1435,9 +1440,7 @@ static swig_cast_info _swigc__p_f_p_struct_MDB_env_p_q_const__char__void[] = {  
 static swig_cast_info _swigc__p_f_p_struct_MDB_val_p_void_p_void_p_void__void[] = {  {&_swigt__p_f_p_struct_MDB_val_p_void_p_void_p_void__void, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_int[] = {  {&_swigt__p_int, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_mode_t[] = {  {&_swigt__p_mode_t, 0, 0, 0},{0, 0, 0, 0}};
-static swig_cast_info _swigc__p_p_char[] = {  {&_swigt__p_p_char, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_p_void[] = {  {&_swigt__p_p_void, 0, 0, 0},{0, 0, 0, 0}};
-static swig_cast_info _swigc__p_size_t[] = {  {&_swigt__p_size_t, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_unsigned_int[] = {  {&_swigt__p_unsigned_int, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_void[] = {  {&_swigt__p_void, 0, 0, 0},{0, 0, 0, 0}};
 
@@ -1457,9 +1460,7 @@ static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_f_p_struct_MDB_val_p_void_p_void_p_void__void,
   _swigc__p_int,
   _swigc__p_mode_t,
-  _swigc__p_p_char,
   _swigc__p_p_void,
-  _swigc__p_size_t,
   _swigc__p_unsigned_int,
   _swigc__p_void,
 };
@@ -1470,7 +1471,6 @@ static swig_cast_info *swig_cast_initial[] = {
 /* end header section */
 /* vdecl subsection */
 static int le_swig__p_f_p_q_const__struct_MDB_val_p_q_const__struct_MDB_val__int=0; /* handle for _p_f_p_q_const__struct_MDB_val_p_q_const__struct_MDB_val__int */
-static int le_swig__p_size_t=0; /* handle for _p_size_t */
 static int le_swig__p_f_p_struct_MDB_val_p_void_p_void_p_void__void=0; /* handle for _p_f_p_struct_MDB_val_p_void_p_void_p_void__void */
 static int le_swig__p_f_p_struct_MDB_env_p_q_const__char__void=0; /* handle for _p_f_p_struct_MDB_env_p_q_const__char__void */
 static int le_swig__p_MDB_stat=0; /* handle for MDB_stat */
@@ -1482,7 +1482,6 @@ static int le_swig__p_void=0; /* handle for _p_void */
 static int le_swig__p_p_void=0; /* handle for _p_p_void */
 static int le_swig__p_MDB_env=0; /* handle for _p_MDB_env */
 static int le_swig__p_char=0; /* handle for _p_char */
-static int le_swig__p_p_char=0; /* handle for _p_p_char */
 static int le_swig__p_MDB_cursor=0; /* handle for _p_MDB_cursor */
 static int le_swig__p_MDB_cursor_op=0; /* handle for _p_MDB_cursor_op */
 static int le_swig__p_MDB_envinfo=0; /* handle for MDB_envinfo */
@@ -4073,7 +4072,7 @@ fail:
 ZEND_NAMED_FUNCTION(_wrap_mdb_val_size) {
   MDB_val *arg1 = (MDB_val *) 0 ;
   zval **args[1];
-  int result;
+  size_t result;
   
   SWIG_ResetError();
   if(ZEND_NUM_ARGS() != 1 || zend_get_parameters_array_ex(1, args) != SUCCESS) {
@@ -4085,7 +4084,7 @@ ZEND_NAMED_FUNCTION(_wrap_mdb_val_size) {
       SWIG_PHP_Error(E_ERROR, "Type error in argument 1 of mdb_val_size. Expected SWIGTYPE_p_MDB_val");
     }
   }
-  result = (int)mdb_val_size(arg1);
+  result = mdb_val_size(arg1);
   {
     ZVAL_LONG(return_value,result);
   }
@@ -4096,36 +4095,24 @@ fail:
 
 
 ZEND_NAMED_FUNCTION(_wrap_mdb_val_data) {
-  char **arg1 = (char **) 0 ;
-  size_t *arg2 = (size_t *) 0 ;
-  MDB_val *arg3 = (MDB_val *) 0 ;
-  zval **args[3];
+  MDB_val *arg1 = (MDB_val *) 0 ;
+  zval **args[1];
+  MDB_val *result = 0 ;
   
   SWIG_ResetError();
-  if(ZEND_NUM_ARGS() != 3 || zend_get_parameters_array_ex(3, args) != SUCCESS) {
+  if(ZEND_NUM_ARGS() != 1 || zend_get_parameters_array_ex(1, args) != SUCCESS) {
     WRONG_PARAM_COUNT;
   }
   
   {
-    if(SWIG_ConvertPtr(*args[0], (void **) &arg1, SWIGTYPE_p_p_char, 0) < 0) {
-      SWIG_PHP_Error(E_ERROR, "Type error in argument 1 of mdb_val_data. Expected SWIGTYPE_p_p_char");
+    if(SWIG_ConvertPtr(*args[0], (void **) &arg1, SWIGTYPE_p_MDB_val, 0) < 0) {
+      SWIG_PHP_Error(E_ERROR, "Type error in argument 1 of mdb_val_data. Expected SWIGTYPE_p_MDB_val");
     }
   }
+  result = (MDB_val *)mdb_val_data(arg1);
   {
-    if(SWIG_ConvertPtr(*args[1], (void **) &arg2, SWIGTYPE_p_size_t, 0) < 0) {
-      SWIG_PHP_Error(E_ERROR, "Type error in argument 2 of mdb_val_data. Expected SWIGTYPE_p_size_t");
-    }
-  }
-  {
-    if(SWIG_ConvertPtr(*args[2], (void **) &arg3, SWIGTYPE_p_MDB_val, 0) < 0) {
-      SWIG_PHP_Error(E_ERROR, "Type error in argument 3 of mdb_val_data. Expected SWIGTYPE_p_MDB_val");
-    }
-  }
-  mdb_val_data(arg1,arg2,arg3);
-  
-  {
-    if (*arg2) {
-      ZVAL_STRINGL(return_value, *arg1, *arg2, 1);
+    if (result->mv_size) {
+      ZVAL_STRINGL(return_value, result->mv_data, result->mv_size, 1);
     } else {
       ZVAL_EMPTY_STRING(return_value);
     }
@@ -4509,10 +4496,6 @@ static ZEND_RSRC_DTOR_FUNC(_wrap_destroy_p_f_p_q_const__struct_MDB_val_p_q_const
   /* No destructor for simple type _p_f_p_q_const__struct_MDB_val_p_q_const__struct_MDB_val__int */
   efree(rsrc->ptr);
 }
-static ZEND_RSRC_DTOR_FUNC(_wrap_destroy_p_size_t) {
-  /* No destructor for simple type _p_size_t */
-  efree(rsrc->ptr);
-}
 static ZEND_RSRC_DTOR_FUNC(_wrap_destroy_p_f_p_struct_MDB_val_p_void_p_void_p_void__void) {
   /* No destructor for simple type _p_f_p_struct_MDB_val_p_void_p_void_p_void__void */
   efree(rsrc->ptr);
@@ -4553,10 +4536,6 @@ static ZEND_RSRC_DTOR_FUNC(_wrap_destroy_p_MDB_env) {
 }
 static ZEND_RSRC_DTOR_FUNC(_wrap_destroy_p_char) {
   /* No destructor for simple type _p_char */
-  efree(rsrc->ptr);
-}
-static ZEND_RSRC_DTOR_FUNC(_wrap_destroy_p_p_char) {
-  /* No destructor for simple type _p_p_char */
   efree(rsrc->ptr);
 }
 static ZEND_RSRC_DTOR_FUNC(_wrap_destroy_p_MDB_cursor) {
@@ -4966,8 +4945,6 @@ ZEND_INIT_MODULE_GLOBALS(lmdb_php, lmdb_php_init_globals, lmdb_php_destroy_globa
 /* Register resource destructors for pointer types */
 le_swig__p_f_p_q_const__struct_MDB_val_p_q_const__struct_MDB_val__int=zend_register_list_destructors_ex(_wrap_destroy_p_f_p_q_const__struct_MDB_val_p_q_const__struct_MDB_val__int,NULL,(char *)(SWIGTYPE_p_f_p_q_const__struct_MDB_val_p_q_const__struct_MDB_val__int->name),module_number);
 SWIG_TypeClientData(SWIGTYPE_p_f_p_q_const__struct_MDB_val_p_q_const__struct_MDB_val__int,&le_swig__p_f_p_q_const__struct_MDB_val_p_q_const__struct_MDB_val__int);
-le_swig__p_size_t=zend_register_list_destructors_ex(_wrap_destroy_p_size_t,NULL,(char *)(SWIGTYPE_p_size_t->name),module_number);
-SWIG_TypeClientData(SWIGTYPE_p_size_t,&le_swig__p_size_t);
 le_swig__p_f_p_struct_MDB_val_p_void_p_void_p_void__void=zend_register_list_destructors_ex(_wrap_destroy_p_f_p_struct_MDB_val_p_void_p_void_p_void__void,NULL,(char *)(SWIGTYPE_p_f_p_struct_MDB_val_p_void_p_void_p_void__void->name),module_number);
 SWIG_TypeClientData(SWIGTYPE_p_f_p_struct_MDB_val_p_void_p_void_p_void__void,&le_swig__p_f_p_struct_MDB_val_p_void_p_void_p_void__void);
 le_swig__p_f_p_struct_MDB_env_p_q_const__char__void=zend_register_list_destructors_ex(_wrap_destroy_p_f_p_struct_MDB_env_p_q_const__char__void,NULL,(char *)(SWIGTYPE_p_f_p_struct_MDB_env_p_q_const__char__void->name),module_number);
@@ -4990,8 +4967,6 @@ le_swig__p_MDB_env=zend_register_list_destructors_ex(_wrap_destroy_p_MDB_env,NUL
 SWIG_TypeClientData(SWIGTYPE_p_MDB_env,&le_swig__p_MDB_env);
 le_swig__p_char=zend_register_list_destructors_ex(_wrap_destroy_p_char,NULL,(char *)(SWIGTYPE_p_char->name),module_number);
 SWIG_TypeClientData(SWIGTYPE_p_char,&le_swig__p_char);
-le_swig__p_p_char=zend_register_list_destructors_ex(_wrap_destroy_p_p_char,NULL,(char *)(SWIGTYPE_p_p_char->name),module_number);
-SWIG_TypeClientData(SWIGTYPE_p_p_char,&le_swig__p_p_char);
 le_swig__p_MDB_cursor=zend_register_list_destructors_ex(_wrap_destroy_p_MDB_cursor,NULL,(char *)(SWIGTYPE_p_MDB_cursor->name),module_number);
 SWIG_TypeClientData(SWIGTYPE_p_MDB_cursor,&le_swig__p_MDB_cursor);
 le_swig__p_MDB_cursor_op=zend_register_list_destructors_ex(_wrap_destroy_p_MDB_cursor_op,NULL,(char *)(SWIGTYPE_p_MDB_cursor_op->name),module_number);

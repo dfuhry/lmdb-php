@@ -69,13 +69,17 @@
 %rename (mdb_env_set_userctx) mdb_env_set_userctx_swig(MDB_env *env, char *value);
 #endif
 
-%typemap(argout) (char **output_str, size_t *output_len) {
-    if (*$2) {
-      ZVAL_STRINGL($result, *$1, *$2, 1);
+/*
+ * Have mdb_val_data output MDB_val into a returned PHP string byte-safely,
+ * i.e. preserving any "\0" bytes. Simply returning char* wouldn't do this.
+ */
+%typemap(out) MDB_val *mdb_val_data {
+    if ($1->mv_size) {
+        ZVAL_STRINGL($result, $1->mv_data, $1->mv_size, 1);
     } else {
-      ZVAL_EMPTY_STRING($result);
+        ZVAL_EMPTY_STRING($result);
     }
-};
+}
 
 %apply (char *STRING, size_t LENGTH) { (char *input_str, size_t input_len) };
 
@@ -175,7 +179,7 @@
         return flags;
     }
 
-    char *mdb_env_get_path_swig(MDB_env *env){
+    const char *mdb_env_get_path_swig(MDB_env *env){
         const char *path;
 
         int rc = mdb_env_get_path(env, &path);
@@ -184,7 +188,7 @@
             php_error_docref(NULL, E_NOTICE, "mdb_env_get_path: %d\n", rc);
         }
 
-        return (unsigned char *)path;
+        return path;
     }
 
     mdb_filehandle_t *mdb_env_get_fd_swig (MDB_env *env){
@@ -273,23 +277,29 @@
         key->mv_size = input_len;
         key->mv_data = NULL;
         if (input_len) {
-          // TODO: Fix this memory leak. Not as simple as just doing:
-          // "free(key->mv_data);" in destructor since mdb operations can alter
-          // mv_size and mv_data pointer during get operations.
+          // TODO: Fix this malloc() memory leak. Not as simple as just doing
+          // free(key->mv_data) in a destructor since mdb operations can alter
+          // mv_size and mv_data pointer during get operations, after which
+          // mv_data should not be free()d.
           // Maybe store pointer in a data structure indexed on MDB_val memory
           // location, to be looked-up & freed when "owning" MDB_val is freed.
           key->mv_data = malloc(input_len);
+
           memcpy(key->mv_data, input_str, input_len);
         }
+        return key;
     }
 
-    int mdb_val_size( MDB_val *key){
-        return (int)key->mv_size;
+    size_t mdb_val_size( MDB_val *key){
+        return key->mv_size;
     }
 
-    void mdb_val_data(char **output_str, size_t *output_len, MDB_val *key){
-        *output_str = (char*)key->mv_data;
-        *output_len = key->mv_size;
+    /*
+     * Placeholder that returns self; a previously-defined typemap will do the
+     * grander work of outputting key->mv_size and key->mv_data into a PHP string.
+     */
+    MDB_val *mdb_val_data(MDB_val *key) {
+        return key;
     }
 
     int mdb_stat_psize(MDB_stat *stat){
