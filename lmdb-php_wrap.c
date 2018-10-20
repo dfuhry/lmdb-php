@@ -1292,7 +1292,7 @@ extern "C" {
         MDB_val *key;
         key = (MDB_val*)malloc( sizeof( MDB_val ) );
         key->mv_size = input_len;
-        key->mv_data = NULL;
+        key->mv_data = "";
         if (input_len) {
           // TODO: Fix this malloc() memory leak. Not as simple as just doing
           // free(key->mv_data) in a destructor since mdb operations can alter
