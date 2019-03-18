@@ -1,5 +1,6 @@
 all:
-	gcc -Wall -Wno-unused-label -Wno-unused-function -Wno-unused-variable -O2 -shared -fpic  lmdb-php_wrap.c -I/usr/local/include/php/Zend/ -I/usr/local/include/php/TSRM/ -I/usr/local/include/php/ -I/usr/local/include/php/main/ -I/usr/include/php5/Zend/ -I/usr/include/php5/ -I/usr/include/php5/TSRM/ -I/usr/include/php5/main/ -llmdb -o lmdb-php.so
+	#gcc -Wall -Wno-unused-label -Wno-unused-function -Wno-unused-variable -O2 -shared -fpic  lmdb-php_wrap.c -I/usr/local/include/php/Zend/ -I/usr/local/include/php/TSRM/ -I/usr/local/include/php/ -I/usr/local/include/php/main/ -I/usr/include/php5/Zend/ -I/usr/include/php5/ -I/usr/include/php5/TSRM/ -I/usr/include/php5/main/ -llmdb -o lmdb-php.so
+	gcc -shared -fpic -Wall -Wno-unused-label -Wno-unused-function -Wno-unusued-variable  lmdb-php_wrap.c `php-config --includes` -llmdb -o lmdb.so
 
 swig-php5:
 	swig -php5 -Wall lmdb-php.i
