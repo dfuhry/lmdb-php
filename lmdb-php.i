@@ -2,7 +2,7 @@
 %include exception.i    
 
 %{
-#include "lmdb.h"
+#include "/usr/include/lmdb.h"
 %}
 
 %ignore mdb_env_create;
@@ -30,7 +30,7 @@
 %ignore mdb_env_set_userctx;
 #endif
 
-%include "lmdb.h"
+%include "/usr/include/lmdb.h"
 
 %newobject mdb_env_create_swig;
 %newobject mdb_env_open_swig;
@@ -75,7 +75,7 @@
  */
 %typemap(out) MDB_val *mdb_val_data {
     if ($1->mv_size) {
-        ZVAL_STRINGL($result, $1->mv_data, $1->mv_size, 1);
+        ZVAL_STRINGL($result, $1->mv_data, $1->mv_size);
     } else {
         ZVAL_EMPTY_STRING($result);
     }
